@@ -23,13 +23,18 @@ public class PlayerController : MonoBehaviour
     [Header("Radial (UFO) Multipliers")]
     public float radialMultiplier = 0.8f;
     
+    [Header("Test Prefabs")]
+    public GameObject clawPrefab; // 在 Inspector 中拖入 Claw.prefab
+    
     private Rigidbody rb;
     private InputSystem_Actions controls;
     private Vector2 moveInput;
+    private SocketManager socketManager;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        socketManager = GetComponent<SocketManager>();
         controls = new InputSystem_Actions();
         UpdatePhysicsProperties();
     }
@@ -44,6 +49,30 @@ public class PlayerController : MonoBehaviour
     void OnDisable()
     {
         controls.Player.Disable();
+    }
+
+    void Update()
+    {
+        // 确保键盘设备可用
+        if (Keyboard.current == null) return;
+
+        // 按下 "1" 键在第一个插槽上附加一个爪子
+        if (Keyboard.current.digit1Key.wasPressedThisFrame)
+        {
+            if (socketManager != null && clawPrefab != null)
+            {
+                socketManager.AttachPart(clawPrefab, 0); // 0 是第一个插槽的索引
+            }
+        }
+
+        // 按下 "2" 键移除第一个插槽的部件
+        if (Keyboard.current.digit2Key.wasPressedThisFrame)
+        {
+            if (socketManager != null)
+            {
+                socketManager.DetachPart(0);
+            }
+        }
     }
 
     void FixedUpdate()
@@ -127,13 +156,13 @@ public class PlayerController : MonoBehaviour
         {
             case MovementMode.Bilateral:
                 // Lower angular drag allows for "drifting" or "tail-whipping"
-                rb.angularDrag = 0.5f; 
-                rb.drag = 1f; // Lower linear drag for higher top speed
+                rb.angularDamping = 0.5f; 
+                rb.linearDamping = 1f; // Lower linear drag for higher top speed
                 break;
             case MovementMode.Radial:
                 // Higher angular drag for stable, non-rotating body
-                rb.angularDrag = 5f; 
-                rb.drag = 2f; // Higher linear drag for quicker stops and precise positioning
+                rb.angularDamping = 5f; 
+                rb.linearDamping = 2f; // Higher linear drag for quicker stops and precise positioning
                 break;
         }
     }
