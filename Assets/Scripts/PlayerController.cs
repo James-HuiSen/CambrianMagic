@@ -23,8 +23,11 @@ public class PlayerController : MonoBehaviour
     [Header("Radial (UFO) Multipliers")]
     public float radialMultiplier = 0.8f;
     
-    [Header("Test Prefabs")]
-    public GameObject clawPrefab; // 在 Inspector 中拖入 Claw.prefab
+    [Header("Part Prefabs for Testing")]
+    public GameObject leftClawPrefab;
+    public GameObject rightClawPrefab;
+    public GameObject leftSpikePrefab;
+    public GameObject rightSpikePrefab;
     
     private Rigidbody rb;
     private InputSystem_Actions controls;
@@ -54,24 +57,40 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         // 确保键盘设备可用
-        if (Keyboard.current == null) return;
+        if (Keyboard.current == null || socketManager == null) return;
 
-        // 按下 "1" 键在第一个插槽上附加一个爪子
-        if (Keyboard.current.digit1Key.wasPressedThisFrame)
+        // --- ATTACH PARTS ---
+        // 1: Attach Left Claw
+        if (Keyboard.current.digit1Key.wasPressedThisFrame && leftClawPrefab != null)
         {
-            if (socketManager != null && clawPrefab != null)
-            {
-                socketManager.AttachPart(clawPrefab, 0); // 0 是第一个插槽的索引
-            }
+            socketManager.AttachPart(leftClawPrefab);
+        }
+        // 2: Attach Right Claw
+        if (Keyboard.current.digit2Key.wasPressedThisFrame && rightClawPrefab != null)
+        {
+            socketManager.AttachPart(rightClawPrefab);
+        }
+        // 3: Attach Left Spike
+        if (Keyboard.current.digit3Key.wasPressedThisFrame && leftSpikePrefab != null)
+        {
+            socketManager.AttachPart(leftSpikePrefab);
+        }
+        // 4: Attach Right Spike
+        if (Keyboard.current.digit4Key.wasPressedThisFrame && rightSpikePrefab != null)
+        {
+            socketManager.AttachPart(rightSpikePrefab);
         }
 
-        // 按下 "2" 键移除第一个插槽的部件
-        if (Keyboard.current.digit2Key.wasPressedThisFrame)
+        // --- DETACH PARTS ---
+        // 5: Detach all parts on the Left side
+        if (Keyboard.current.digit5Key.wasPressedThisFrame)
         {
-            if (socketManager != null)
-            {
-                socketManager.DetachPart(0);
-            }
+            socketManager.DetachPart(SocketSide.Left);
+        }
+        // 6: Detach all parts on the Right side
+        if (Keyboard.current.digit6Key.wasPressedThisFrame)
+        {
+            socketManager.DetachPart(SocketSide.Right);
         }
     }
 

@@ -174,7 +174,10 @@ MonoBehaviour:
   sidewaysMultiplier: 0.6
   backwardMultiplier: 0.3
   radialMultiplier: 0.8
-  clawPrefab: {fileID: 8584358589121224317, guid: 7f6f0d76a4296b64ea4d47ad8281f7da, type: 3}
+  leftClawPrefab: {fileID: 8584358589121224317, guid: 85eedfde2267ef2439098cc9382a7bdc, type: 3}
+  rightClawPrefab: {fileID: 8584358589121224317, guid: 7f6f0d76a4296b64ea4d47ad8281f7da, type: 3}
+  leftSpikePrefab: {fileID: 3645100457062232315, guid: 12fae58962c83ca44b1055c17419abd3, type: 3}
+  rightSpikePrefab: {fileID: 3645100457062232315, guid: 79dece12e24b75047b667568789615f0, type: 3}
 --- !u!114 &147629899
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -188,10 +191,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SocketManager
   sockets:
-  - {fileID: 856865075}
-  - {fileID: 712286237}
-  - {fileID: 1387555004}
-  - {fileID: 1201034061}
+  - socketTransform: {fileID: 856865075}
+    side: 1
+  - socketTransform: {fileID: 712286237}
+    side: 2
+  - socketTransform: {fileID: 1387555004}
+    side: 3
+  - socketTransform: {fileID: 1201034061}
+    side: 4
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0

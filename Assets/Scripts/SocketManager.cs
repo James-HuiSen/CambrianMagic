@@ -1,66 +1,81 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq; // 引入Linq以便于查询
 
 public class SocketManager : MonoBehaviour
 {
-    // 用于在 Inspector 面板中引用的所有插槽
-    public List<Transform> sockets = new List<Transform>();
+    // 定义一个更智能的Socket类，包含位置和侧边信息
+    [System.Serializable]
+    public class Socket
+    {
+        public Transform socketTransform;
+        public SocketSide side;
+        // 我们可以存储当前附加的部件，以了解插槽是否被占用
+        [System.NonSerialized]
+        public GameObject attachedPart = null;
+    }
 
-    // 用于跟踪每个插槽当前附加的部件
-    private Dictionary<Transform, GameObject> attachedParts = new Dictionary<Transform, GameObject>();
+    [Header("Socket Configuration")]
+    public List<Socket> sockets = new List<Socket>();
 
     /// <summary>
-    /// 将一个部件的预制件附加到指定的插槽上。
+    /// 尝试将一个部件的预制件附加到匹配的空闲插槽上。
     /// </summary>
-    /// <param name="partPrefab">要附加的部件预制件。</param>
-    /// <param name="socketIndex">目标插槽在 sockets 列表中的索引。</param>
-    public void AttachPart(GameObject partPrefab, int socketIndex)
+    /// <param name="partPrefab">要附加的部件预制件，其上必须有PartIdentifier组件。</param>
+    public bool AttachPart(GameObject partPrefab)
     {
-        // 1. 检查索引是否有效
-        if (socketIndex < 0 || socketIndex >= sockets.Count)
+        // 1. 获取部件信息
+        PartIdentifier partInfo = partPrefab.GetComponent<PartIdentifier>();
+        if (partInfo == null)
         {
-            Debug.LogError($"无效的插槽索引: {socketIndex}");
-            return;
+            Debug.LogError($"部件预制件 {partPrefab.name} 上缺少 PartIdentifier 组件!", partPrefab);
+            return false;
         }
 
-        Transform socket = sockets[socketIndex];
+        // 2. 查找一个匹配且可用的插槽
+        // 使用Linq查找：插槽的侧边必须匹配部件要求的侧边(或者任一方为Any)，并且该插槽当前未被占用
+        Socket targetSocket = sockets.FirstOrDefault(socket =>
+            (socket.side == partInfo.requiredSide || partInfo.requiredSide == SocketSide.Any || socket.side == SocketSide.Any)
+            && socket.attachedPart == null);
 
-        // 2. (可选) 如果插槽已被占用，先移除旧部件
-        if (attachedParts.ContainsKey(socket))
+        // 3. 如果找到了合适的插槽
+        if (targetSocket != null)
         {
-            DetachPart(socketIndex);
+            // 实例化新部件并附加到插槽上
+            GameObject newPart = Instantiate(partPrefab, targetSocket.socketTransform.position, targetSocket.socketTransform.rotation);
+            newPart.transform.SetParent(targetSocket.socketTransform);
+            newPart.transform.localPosition = Vector3.zero;
+            newPart.transform.localRotation = Quaternion.identity;
+
+            // 记录已附加的部件
+            targetSocket.attachedPart = newPart;
+            Debug.Log($"成功将 {partPrefab.name} 附加到 {targetSocket.side} 侧的插槽上。");
+            return true;
         }
-
-        // 3. 实例化新部件并附加到插槽上
-        GameObject newPart = Instantiate(partPrefab, socket.position, socket.rotation);
-        newPart.transform.SetParent(socket);
-
-        // 4. (重要) 重置局部变换以确保其与插槽对齐
-        newPart.transform.localPosition = Vector3.zero;
-        newPart.transform.localRotation = Quaternion.identity;
-
-        // 5. 记录已附加的部件
-        attachedParts[socket] = newPart;
+        else
+        {
+            Debug.LogWarning($"没有找到适合 {partPrefab.name} (要求: {partInfo.requiredSide}) 的空闲插槽。");
+            return false;
+        }
     }
 
     /// <summary>
     /// 从指定的插槽上分离并销毁部件。
     /// </summary>
-    /// <param name="socketIndex">目标插槽的索引。</param>
-    public void DetachPart(int socketIndex)
+    /// <param name="socketSide">要清空的插槽侧边。</param>
+    public void DetachPart(SocketSide socketSide)
     {
-        if (socketIndex < 0 || socketIndex >= sockets.Count)
-        {
-            Debug.LogError($"无效的插槽索引: {socketIndex}");
-            return;
-        }
+        // 查找所有匹配侧边的插槽
+        var targetSockets = sockets.Where(s => s.side == socketSide);
 
-        Transform socket = sockets[socketIndex];
-
-        if (attachedParts.TryGetValue(socket, out GameObject partToDetach))
+        foreach (var socket in targetSockets)
         {
-            Destroy(partToDetach);
-            attachedParts.Remove(socket);
+            if (socket.attachedPart != null)
+            {
+                Debug.Log($"从 {socket.side} 侧的插槽上分离 {socket.attachedPart.name}。");
+                Destroy(socket.attachedPart);
+                socket.attachedPart = null; // 标记插槽为空闲
+            }
         }
     }
 }
